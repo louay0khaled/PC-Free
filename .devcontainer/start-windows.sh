@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# PC-Free: start a persistent Windows 10 VM in dockur/windows.
-# This is designed for GitHub Codespaces and requires no local PC.
+# PC-Free: start a persistent Windows 7 VM in dockur/windows.
+# Designed for GitHub Codespaces; no local PC required.
 
 DATA_DIR="${CODESPACE_VSCODE_FOLDER:-$PWD}/.windows-data"
 CONTAINER="pc-free-windows"
@@ -14,7 +14,6 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
-# Wait briefly for the Docker-in-Docker daemon.
 for i in {1..30}; do
   if docker info >/dev/null 2>&1; then
     break
@@ -24,24 +23,23 @@ done
 
 docker info >/dev/null 2>&1 || { echo "Docker daemon did not become ready."; exit 1; }
 
-# Reuse an existing VM so Windows data survives Codespace restarts.
+# If an older VM exists, keep its data only when it is already the requested OS.
+# The Windows 10 VM must be removed manually once so the new Windows 7 image can be created.
 if docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER"; then
-  if ! docker ps --format '{{.Names}}' | grep -qx "$CONTAINER"; then
-    docker start "$CONTAINER" >/dev/null
-  fi
-  echo "Windows is already configured. Open forwarded port 8006 in the Ports tab."
-  exit 0
+  echo "Existing Windows container detected. To switch from the previous Windows version, run:"
+  echo "docker rm -f $CONTAINER"
+  exit 1
 fi
 
-echo "Pulling $IMAGE (first run can take several minutes)..."
+echo "Pulling $IMAGE (Windows 7 image is about 3 GB)..."
 docker pull "$IMAGE"
 
 RUN_ARGS=(
   -d
   --name "$CONTAINER"
   --cap-add NET_ADMIN
-  -e VERSION=10
-  -e RAM_SIZE=6G
+  -e VERSION=win7
+  -e RAM_SIZE=4G
   -e CPU_CORES=2
   -e DISK_SIZE=16G
   -p 8006:8006
@@ -49,7 +47,6 @@ RUN_ARGS=(
   --stop-timeout 120
 )
 
-# KVM gives much better performance when the Codespace host exposes it.
 if [ -e /dev/kvm ]; then
   RUN_ARGS+=(--device /dev/kvm -e KVM=Y)
   echo "KVM detected: hardware acceleration enabled."
@@ -65,5 +62,5 @@ fi
 docker run "${RUN_ARGS[@]}" "$IMAGE"
 
 echo
- echo "Windows 10 is starting. Open the forwarded port 8006 from the Codespaces Ports tab."
- echo "First boot may take several minutes while the Windows image is prepared."
+echo "Windows 7 is starting. Open forwarded port 8006 from the Codespaces Ports tab."
+echo "First boot may take several minutes while the Windows image is prepared."
