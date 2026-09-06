@@ -1,0 +1,21 @@
+{
+  "name": "PC-Free Windows Cloud",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "privileged": true,
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "moby": true
+    }
+  },
+  "forwardPorts": [8006],
+  "portsAttributes": {
+    "8006": {
+      "label": "Windows 10 Desktop",
+      "protocol": "http",
+      "onAutoForward": "openBrowserOnce"
+    }
+  },
+  "postStartCommand": "bash .devcontainer/start-windows.sh",
+  "remoteUser": "vscode"
+}
